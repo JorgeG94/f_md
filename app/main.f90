@@ -5,7 +5,7 @@ program main
   use molecule_utils, only: Molecule_type
   use center_of_mass_utils, only: HardSphereType, FragmentType, construct_hard_spheres, print_hard_spheres
   use lennard_jones, only: calculate_lj_potential, calculate_lj_forces
-  use velocity_verlet, only: do_velocity_verlet_step
+  use verlet_integrator, only: do_verlet_step
   use app_output
   implicit none
 

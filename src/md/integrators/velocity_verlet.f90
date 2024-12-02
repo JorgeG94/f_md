@@ -1,12 +1,12 @@
-module velocity_verlet
+module verlet_integrator
    use stdlib_kinds, only: dp
    use center_of_mass_utils, only: HardSphereType
    implicit none
    private
-   public :: do_velocity_verlet_step
+   public :: do_verlet_step
 contains
 
-   subroutine do_velocity_verlet_step(hard_spheres, forces, dt, masses, velocities, is_first_step)
+   subroutine do_verlet_step(hard_spheres, forces, dt, masses, velocities, is_first_step)
       type(HardSphereType), intent(inout) :: hard_spheres
       real(dp), intent(in) :: forces(:,:)
       real(dp), intent(in) :: dt
@@ -29,6 +29,6 @@ contains
             velocities(i,:) * dt + 0.5_dp * forces(i,:) / masses(i) * dt**2
       end do
 
-   end subroutine do_velocity_verlet_step
+   end subroutine do_verlet_step
 
-end module velocity_verlet
+end module verlet_integrator
