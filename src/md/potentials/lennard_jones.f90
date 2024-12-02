@@ -34,16 +34,15 @@ contains
             r2 = dot_product(rij, rij)
             r = sqrt(r2)
             r6 = r2**3
-            r12 = r6 * r6
-
-            force_magnitude = 24.0_dp * epsilon * (2.0_dp * sigma**12 / r**12 - sigma**6 / r**6) 
-            forces_ij = force_magnitude * rij / r
-            forces(i,:) = forces(i,:) + force_magnitude * rij 
-            forces(j,:) = forces(j,:) - force_magnitude * rij 
-        ! print *, "Pair (i, j): ", i, j
-        ! print *, "Force vector on i due to j: ", forces_ij
-        ! print *, "Force vector on j due to i: ", -forces_ij
-        ! print *, "Sum (should be zero): ", forces_ij + (-forces_ij)
+            r12 = r6**2
+            force_magnitude = 24.0_dp * epsilon * (2.0_dp * sigma**12 / r12 - sigma**6 / r6) / r2
+            !forces_ij = force_magnitude * rij / r
+            forces(i,:) = forces(i,:) + force_magnitude * rij
+            forces(j,:) = forces(j,:) - force_magnitude * rij
+            ! print *, "Pair (i, j): ", i, j
+            ! print *, "Force vector on i due to j: ", forces_ij
+            ! print *, "Force vector on j due to i: ", -forces_ij
+            ! print *, "Sum (should be zero): ", forces_ij + (-forces_ij)
          end do
       end do
 

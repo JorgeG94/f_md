@@ -20,6 +20,9 @@ program main
   type(Molecule_type) :: molecule
   type(FragmentType) :: water 
   type(HardSphereType) :: hard_spheres
+  real(dp), allocatable :: potential_energies(:), kinetic_energies(:),&
+   total_energies(:)
+  logical :: is_first_step = .true.
 
   epsilon = 0.155_dp
   sigma = 3.166_dp
@@ -27,7 +30,10 @@ program main
   scaled_sigma = sigma / sigma
 
   dt = 0.001_dp
-  num_steps = 3
+  num_steps = 200
+  allocate(potential_energies(num_steps))
+  allocate(kinetic_energies(num_steps))
+  allocate(total_energies(num_steps))
 
   filename = 'inputs/example.xyz'
   call read_xyz(filename, num_atoms, atom_symbols, coords)
@@ -42,8 +48,6 @@ program main
   water%atom_symbols = ['O ', 'H ', 'H ']
   ! this could be made object oriented
   call construct_hard_spheres(molecule, water, hard_spheres)
-    print *, "Positions:"
-    call print_array(hard_spheres%coords, 'NUMPY')
   hard_spheres%masses = hard_spheres%masses / hard_spheres%masses(1)
   hard_spheres%coords = hard_spheres%coords / sigma
 
@@ -55,42 +59,37 @@ program main
 
  
   ! Initial force calculation
-call calculate_lj_forces(hard_spheres, epsilon, sigma, lj_potential, forces)
 
 
 do i = 1, num_steps
-    print *, "Step:", i
 
+    call calculate_lj_forces(hard_spheres, epsilon, sigma, lj_potential, forces)
     ! 1. Velocity Verlet Step: Update positions and first half-step of velocities
-    call do_velocity_verlet_step(hard_spheres, forces, dt, hard_spheres%masses, velocities)
-
+    !call do_velocity_verlet_step(hard_spheres, forces, dt, hard_spheres%masses, velocities, is_first_step )
+    is_first_step = .false.
     ! 2. Recalculate forces based on updated positions
     call calculate_lj_forces(hard_spheres, epsilon, sigma, lj_potential, forces)
-
-    ! 3. Complete the second half-step of velocities
-    do j = 1, hard_spheres%num_spheres
-        velocities(j,:) = velocities(j,:) + 0.5_dp * forces(j,:) / hard_spheres%masses(j) * dt
-    end do
 
     ! 4. Compute kinetic energy
     kinetic_energy = 0.0_dp
     do j = 1, hard_spheres%num_spheres
-        kinetic_energy = kinetic_energy + 0.5_dp * hard_spheres%masses(j) * sum(velocities(j, :)**2)
+        kinetic_energy = kinetic_energy + 0.5_dp * hard_spheres%masses(j) &
+         * sum(velocities(j, :)**2)
     end do
+    potential_energies(i) = lj_potential
+    kinetic_energies(i) = kinetic_energy
+    total_energies(i) = lj_potential + kinetic_energy
 
     ! 5. Print diagnostics
-    print *, "Positions:"
-    call print_array(hard_spheres%coords, 'NUMPY')
-    print *, "Potential energy: ", lj_potential
-    print *, "Kinetic energy: ", kinetic_energy
-    print *, "Total energy: ", lj_potential + kinetic_energy
+    ! print *, "Potential energy: ", lj_potential
+    ! print *, "Kinetic energy: ", kinetic_energy
+     print *, "Total energy: ", lj_potential + kinetic_energy
 end do
 
-
-
-
-
-
-
+do i = 1, num_steps - 1
+  !print *, "Potential energy change: ", potential_energies(i+1) - potential_energies(i)
+  !print *, "Kinetic energy change  : ", kinetic_energies(i+1) - kinetic_energies(i)
+  !print *, "Total energy change: ", total_energies(i+1) - total_energies(i)
+end do
 
 end program main
