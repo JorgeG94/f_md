@@ -4,7 +4,7 @@ program main
   use stdlib_codata
   use molecule_utils, only: Molecule_type
   use center_of_mass_utils, only: HardSphereType, FragmentType, construct_hard_spheres, print_hard_spheres
-  use lennard_jones, only: calculate_lj_potential
+  use lennard_jones, only: calculate_lj_potential, calculate_lj_forces
   use velocity_verlet, only: do_velocity_verlet_step
   use app_output
   implicit none
@@ -27,7 +27,7 @@ program main
   scaled_sigma = sigma / sigma
 
   dt = 0.001_dp
-  num_steps =10
+  num_steps = 3
 
   filename = 'inputs/example.xyz'
   call read_xyz(filename, num_atoms, atom_symbols, coords)
@@ -42,33 +42,49 @@ program main
   water%atom_symbols = ['O ', 'H ', 'H ']
   ! this could be made object oriented
   call construct_hard_spheres(molecule, water, hard_spheres)
+    print *, "Positions:"
+    call print_array(hard_spheres%coords, 'NUMPY')
   hard_spheres%masses = hard_spheres%masses / hard_spheres%masses(1)
   hard_spheres%coords = hard_spheres%coords / sigma
 
   allocate(forces(hard_spheres%num_spheres,3))
   allocate(velocities(hard_spheres%num_spheres,3))
   forces = 0.0_dp
-  velocities = 0.0_dp
-  
-  ! initial forces
-  call calculate_lj_potential(hard_spheres, scaled_epsilon, scaled_sigma, lj_potential, forces)
-  print *, "Lennard-Jones potential:", lj_potential
-  do i = 1, num_steps
-      print *, "Step:", i
-      !call print_hard_spheres(hard_spheres)
-      call calculate_lj_potential(hard_spheres, epsilon, sigma, lj_potential, forces)
-      call print_array(velocities, 'NUMPY')
-      ! print *, "Lennard-Jones potential:", lj_potential
-      ! print *, "positions:"
-      call do_velocity_verlet_step(hard_spheres, forces, dt, hard_spheres%masses, velocities)
-      do j = 1, hard_spheres%num_spheres
+  call random_number(scale_factor)
+  velocities = 0.01_dp * scale_factor
+
+ 
+  ! Initial force calculation
+call calculate_lj_forces(hard_spheres, epsilon, sigma, lj_potential, forces)
+
+
+do i = 1, num_steps
+    print *, "Step:", i
+
+    ! 1. Velocity Verlet Step: Update positions and first half-step of velocities
+    call do_velocity_verlet_step(hard_spheres, forces, dt, hard_spheres%masses, velocities)
+
+    ! 2. Recalculate forces based on updated positions
+    call calculate_lj_forces(hard_spheres, epsilon, sigma, lj_potential, forces)
+
+    ! 3. Complete the second half-step of velocities
+    do j = 1, hard_spheres%num_spheres
+        velocities(j,:) = velocities(j,:) + 0.5_dp * forces(j,:) / hard_spheres%masses(j) * dt
+    end do
+
+    ! 4. Compute kinetic energy
+    kinetic_energy = 0.0_dp
+    do j = 1, hard_spheres%num_spheres
         kinetic_energy = kinetic_energy + 0.5_dp * hard_spheres%masses(j) * sum(velocities(j, :)**2)
-      end do
-      temperature = 2.0_dp * kinetic_energy / (3.0_dp * hard_spheres%num_spheres)
-      print *, "Dimensionall temperature:", temperature
-      temperature = temperature *( 1_dp / BOLTZMANN_CONSTANT%value)
-      print *, "Temperature:", temperature
-  end do
+    end do
+
+    ! 5. Print diagnostics
+    print *, "Positions:"
+    call print_array(hard_spheres%coords, 'NUMPY')
+    print *, "Potential energy: ", lj_potential
+    print *, "Kinetic energy: ", kinetic_energy
+    print *, "Total energy: ", lj_potential + kinetic_energy
+end do
 
 
 
