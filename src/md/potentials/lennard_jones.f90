@@ -35,12 +35,11 @@ contains
             r = sqrt(r2)
             r6 = r2**3
             r12 = r6 * r6
-            !lj_pair = 4.0_dp * epsilon * (sigma**12 / r12 - sigma**6 / r6)
+
             force_magnitude = 24.0_dp * epsilon * (2.0_dp * sigma**12 / r**12 - sigma**6 / r**6) 
             forces_ij = force_magnitude * rij / r
             forces(i,:) = forces(i,:) + force_magnitude * rij 
             forces(j,:) = forces(j,:) - force_magnitude * rij 
-                    ! Print forces for validation
         ! print *, "Pair (i, j): ", i, j
         ! print *, "Force vector on i due to j: ", forces_ij
         ! print *, "Force vector on j due to i: ", -forces_ij
