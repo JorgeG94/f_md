@@ -21,7 +21,7 @@ contains
       real(dp), allocatable :: coords(:,:)
       real(dp) :: r_cutoff
 
-      r_cutoff = 2.5_dp * sigma * 1000.0_dp 
+      r_cutoff = 2.5_dp * sigma * 6.0_dp !* 1000.0_dp 
 
       num_spheres = hard_spheres%num_spheres
       coords = hard_spheres%coords
@@ -40,16 +40,14 @@ contains
                print *, "Particles are too close together"
                stop
             end if
-            !print *, "Distance between i and j: ", r
             if (r < r_cutoff) then
                lj_pair = calculate_lj_potential(rij, sigma, epsilon)
-               lj_potential = lj_potential - lj_pair
+               lj_potential = lj_potential + lj_pair
                r6 = r2**3
                r12 = r6**2
-               force_magnitude = 24.0_dp * epsilon * (2.0_dp * sigma**12 / r**13 - sigma**6 / r**7)
-               !forces_ij = force_magnitude * rij / r
-               forces(i,:) = forces(i,:) + force_magnitude * rij / r
-               forces(j,:) = forces(j,:) - force_magnitude * rij / r
+               force_magnitude = 24.0_dp * epsilon * (2.0_dp * (sigma**12 / r**12) - (sigma**6 / r**6))
+               forces(i,:) = forces(i,:) + force_magnitude * rij / r2
+               forces(j,:) = forces(j,:) - force_magnitude * rij / r2
             end if
          end do
       end do
